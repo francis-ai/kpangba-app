@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import db from "../../config/db.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { registerCustomer, findCustomerByEmail } from "../../models/AuthModel.js";
@@ -59,6 +60,23 @@ export const login = async (req, res) => {
         phone: user.cust_phone,
       },
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+export const getProfile = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT cust_id, cust_name, cust_email, cust_phone, cust_country, cust_image, cust_status, cust_datetime FROM tbl_customer WHERE cust_id = ?",
+      [req.user.id]
+    );
+
+    if (!rows.length) return res.status(404).json({ message: "User not found" });
+
+    res.json(rows[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
