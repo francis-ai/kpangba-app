@@ -28,6 +28,4 @@ router.get("/request", verifyToken, getAllHealthcareRequests);
 router.get("/request/:id", verifyToken, getHealthcareRequestById);
 router.put("/request/:id/complete", verifyToken, completeHealthcareRequest);
 
-
-
 export default router;
