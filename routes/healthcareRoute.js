@@ -4,6 +4,7 @@ import {
   loginHealthcare,
   getHealthcareProfile,
   getCustomerByQRCodeOrEmail,
+  getCustomerByEmail,
   getAllHealthcareRequests,
   getHealthcareRequestById,
   completeHealthcareRequest,
@@ -21,6 +22,7 @@ router.get("/profile", verifyToken, getHealthcareProfile);
 
 // Get customer via QR scan or email
 router.get("/customer/:idOrEmail", getCustomerByQRCodeOrEmail);
+router.post("/customer/by-email", getCustomerByEmail);
 
 router.get("/request", verifyToken, getAllHealthcareRequests);
 router.get("/request/:id", verifyToken, getHealthcareRequestById);

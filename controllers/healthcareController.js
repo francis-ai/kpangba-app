@@ -154,6 +154,56 @@ export const getCustomerByQRCodeOrEmail = async (req, res) => {
   }
 };
 
+export const getCustomerByEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Fetch customer by email
+    const [customers] = await db.query(
+      "SELECT * FROM tbl_customer WHERE cust_email = ?",
+      [email]
+    );
+
+    if (customers.length === 0) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const customer = customers[0];
+
+    // Check eligibility (number of orders this month)
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    const [orderCountRows] = await db.query(
+      "SELECT COUNT(*) AS count FROM tbl_orders WHERE customer_email = ? AND DATE_FORMAT(order_date, '%Y-%m') = ?",
+      [customer.cust_email, currentMonth]
+    );
+
+    const orderCount = orderCountRows[0].count;
+
+    const eligibility =
+      orderCount >= 4
+        ? { status: "Eligible", orders: orderCount }
+        : { status: "Not Eligible", orders: orderCount };
+
+    // Return customer + eligibility
+    res.status(200).json({
+      customer: {
+        id: customer.cust_id,
+        name: customer.cust_name,
+        email: customer.cust_email,
+        phone: customer.cust_phone,
+      },
+      eligibility,
+    });
+  } catch (error) {
+    console.error("Error fetching customer by email:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 
 export const getAllHealthcareRequests = async (req, res) => {
   try {
