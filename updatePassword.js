@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import db from "./config/db.js"; // adjust the path if needed
 
 const updatePassword = async () => {
-  const email = "healthcare2@gmail.com";
+  const email = "gni@kpangba.com";
   const newPassword = "12345678";
 
   try {
