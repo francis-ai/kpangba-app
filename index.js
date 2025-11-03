@@ -16,6 +16,8 @@ app.use("/api/auth", userAuthRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/healthcare", healthcareRoute);
 
+
+
 app.get("/", (req, res) => {
   res.send("Welcome to KpangbaApp Backend 🚀");
 });
