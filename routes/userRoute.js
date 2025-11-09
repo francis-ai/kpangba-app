@@ -80,6 +80,3 @@ router.post("/healthcare/request", authMiddleware, requestHealthService);
 router.get("/healthcare/appointments", authMiddleware, getMyAppointments);
 
 export default router;
-
-
-// npm install md5
