@@ -76,13 +76,67 @@ export const loginHealthcare = async (req, res) => {
   }
 };
 
+//=============== CHANGE PASSWORD =========================
+export const changeHealthcarePassword = async (req, res) => {
+  const { oldPassword, newPassword, healthcare_email } = req.body;
+
+  try {
+    // Get existing password
+    const [rows] = await db.query(
+      "SELECT password FROM tbl_health_care WHERE healthcare_email = ?",
+      [healthcare_email]
+    );
+
+    if (rows.length === 0)
+      return res.status(404).json({ message: "Healthcare not found" });
+
+    const validPassword = await bcrypt.compare(oldPassword, rows[0].password);
+    if (!validPassword)
+      return res.status(400).json({ message: "Incorrect old password" });
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    await db.query(
+      "UPDATE tbl_health_care SET password = ? WHERE healthcare_email = ?",
+      [hashedNewPassword, healthcare_email]
+    );
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// =============== UPDATE PROFILE =========================
+export const updateHealthcareProfile = async (req, res) => {
+  const { service_name, service_description, doctor_name, healthcare_email } = req.body;
+
+  try {
+    const [result] = await db.query(
+      `UPDATE tbl_health_care 
+       SET service_name = ?, service_description = ?, doctor_name = ?
+       WHERE healthcare_email = ?`,
+      [service_name, service_description, doctor_name, healthcare_email]
+    );
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "No record found for that email" });
+
+    res.status(200).json({ message: "Profile updated successfully" });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 // ================== PROFILE ==================
 export const getHealthcareProfile = async (req, res) => {
   const healthcareId = req.user?.id; // extracted from JWT middleware
 
   try {
     const [rows] = await db.query(
-      "SELECT service_id, service_name, service_description, healthcare_email FROM tbl_health_care WHERE service_id = ?",
+      "SELECT * FROM tbl_health_care WHERE service_id = ?",
       [healthcareId]
     );
 
@@ -247,19 +301,26 @@ export const getHealthcareRequestById = async (req, res) => {
 export const completeHealthcareRequest = async (req, res) => {
   try {
     const { id } = req.params;
-    const { doctor_reply } = req.body;
+    const { doctor_reply, doctor_name, hospital_name } = req.body;
 
     const [result] = await db.query(
-      "UPDATE tbl_health_care_requests SET status = 'Completed', doctor_reply = ? WHERE request_id = ?",
-      [doctor_reply, id]
+      `UPDATE tbl_health_care_requests 
+       SET status = 'Completed',
+           doctor_reply = ?,
+           doctor_name = ?,
+           hospital_name = ?
+       WHERE request_id = ?`,
+      [doctor_reply, doctor_name, hospital_name, id]
     );
 
     if (result.affectedRows === 0)
-      return res.status(404).json({ success: false, message: "Request not found or already completed" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Request not found or already completed" });
 
     return res.status(200).json({
       success: true,
-      message: "Request marked as completed with doctor reply.",
+      message: "Request marked as completed with doctor details and reply.",
     });
   } catch (error) {
     console.error("Error completing request:", error);
