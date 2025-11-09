@@ -45,8 +45,6 @@ router.get("/wallet/transactions", authMiddleware, getWalletTransactions);
 router.get("/dependant/status", authMiddleware, checkDependantStatus);
 router.post("/wallet/topup", authMiddleware, initiateWalletTopUp);
 
-
-// Profile Update
 // Multer setup for user profile image
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -71,8 +69,10 @@ const upload = multer({
   limits: { fileSize: 2 * 1024 * 1024 } // 2MB limit
 });
 
-
+// Profile Update
 router.put("/profile_update", authMiddleware, upload.single("cust_image"), updateProfile);
+
+// My Orders
 router.get("/my_orders", authMiddleware, getMyOrders);
 
 // Healthcare request 
