@@ -886,3 +886,168 @@ export const getMyAppointments = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };
+
+// Get Monthy order count 
+export const getMonthlyOrders = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const month = new Date().getMonth() + 1;
+    const year = new Date().getFullYear();
+
+    const [orders] = await db.query(
+      "SELECT * FROM tbl_orders WHERE customer_email = ? AND MONTH(order_date) = ? AND YEAR(order_date) = ?",
+      [email, month, year]
+    );
+
+    res.json({ orders });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching orders" });
+  }
+};
+
+
+// Get dependants healthcare request.
+export const getDependantsHealthRequests = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const month = new Date().getMonth() + 1;
+    const year = new Date().getFullYear();
+
+    const [requests] = await db.query(
+      `SELECT sender_email, health_care_service, service_description, request_date 
+       FROM tbl_health_care_requests 
+       WHERE added_by_email = ? AND MONTH(request_date) = ? AND YEAR(request_date) = ?`,
+      [email, month, year]
+    );
+
+    res.json({ requests });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching requests" });
+  }
+};
+
+// Check eligibility
+export const getOrderEligibility = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const [month, year] = [new Date().getMonth() + 1, new Date().getFullYear()];
+
+    // User orders
+    const userOrders = await db.query(
+      "SELECT COUNT(*) AS count FROM tbl_orders WHERE customer_email = ? AND MONTH(order_date) = ? AND YEAR(order_date) = ?",
+      [email, month, year]
+    );
+
+    // Dependants (you can extend this later if needed)
+    const dependantsOrders = 0;
+
+    const totalOrders = userOrders[0].count + dependantsOrders;
+    const eligible = totalOrders >= 4;
+
+    res.json({
+      totalOrders,
+      eligible,
+      message: eligible
+        ? "You have enough orders to access healthcare services."
+        : `You need at least 4 orders this month to access healthcare services. You currently have ${totalOrders}.`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error checking eligibility" });
+  }
+};
+
+// =====================================
+// Dependent 
+// =====================================
+// Add dependent
+export const addDependant = async (req, res) => {
+  try {
+    const { dependant_email } = req.body;
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+    const userName = req.user.name;
+
+    if (!dependant_email)
+      return res.status(400).json({ message: "Dependant email is required" });
+
+    if (dependant_email === userEmail)
+      return res.status(400).json({ message: "You can't add yourself as a dependant" });
+
+    // Check if dependant exists
+    const [dependantRows] = await db.query(
+      "SELECT cust_id, cust_name, cust_email FROM tbl_customer WHERE cust_email = ?",
+      [dependant_email]
+    );
+    const dependant = dependantRows[0];
+
+    if (!dependant)
+      return res.status(404).json({ message: "No customer found with that email" });
+
+    // Check if already added
+    const [existing] = await db.query(
+      "SELECT * FROM tbl_dependants WHERE customer_id = ? AND dependant_id = ?",
+      [userId, dependant.cust_id]
+    );
+
+    if (existing.length > 0)
+      return res.status(400).json({ message: "This person is already your dependant" });
+
+    // Add dependant
+    await db.query(
+      `INSERT INTO tbl_dependants (customer_id, customer_email, customer_name, dependant_id, dependant_email, dependant_name)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [userId, userEmail, userName, dependant.cust_id, dependant.cust_email, dependant.cust_name]
+    );
+
+    res.json({ message: "Dependant added successfully!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Database error", error: error.message });
+  }
+};
+
+// Remove dependent
+export const removeDependant = async (req, res) => {
+  try {
+    const { dependant_id } = req.params;
+    const userId = req.user.id;
+
+    const [result] = await db.query(
+      "DELETE FROM tbl_dependants WHERE customer_id = ? AND dependant_id = ?",
+      [userId, dependant_id]
+    );
+
+    if (result.affectedRows === 0)
+      return res.status(404).json({ message: "Dependant not found" });
+
+    res.json({ message: "Dependant removed successfully!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+// Get all dependent
+export const getDependants = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [dependants] = await db.query(
+      "SELECT dependant_id, dependant_name, dependant_email FROM tbl_dependants WHERE customer_id = ?",
+      [userId]
+    );
+
+    if (dependants.length === 0)
+      return res.json({ message: "No dependants added yet", dependants: [] });
+
+    res.json({ dependants });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching dependants" });
+  }
+};
+

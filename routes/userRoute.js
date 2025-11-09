@@ -14,11 +14,20 @@ import {
     getWalletBalance,
     getCardAndProfile,
     getWalletTransactions,
-    checkDependantStatus,
     initiateWalletTopUp,
 
+    checkDependantStatus,
+
     requestHealthService, 
-    getMyAppointments 
+    getMyAppointments,
+
+    getMonthlyOrders,
+    getDependantsHealthRequests,
+    getOrderEligibility,
+
+    addDependant,
+    removeDependant,
+    getDependants
 } from "../controllers/userController.js";
 import multer from "multer";
 import fs from "fs";
@@ -78,5 +87,15 @@ router.get("/my_orders", authMiddleware, getMyOrders);
 // Healthcare request 
 router.post("/healthcare/request", authMiddleware, requestHealthService);
 router.get("/healthcare/appointments", authMiddleware, getMyAppointments);
+
+// Attendance page
+router.get("/orders-count", authMiddleware, getMonthlyOrders);
+router.get("/dependant-requests", authMiddleware, getDependantsHealthRequests);
+router.get("/order-eligibility", authMiddleware, getOrderEligibility);
+
+// Dependent page
+router.get("/get-dependent", authMiddleware, getDependants);
+router.post("/add-dependent", authMiddleware, addDependant);
+router.delete("/delete-dependent/:dependant_id", authMiddleware, removeDependant);
 
 export default router;
