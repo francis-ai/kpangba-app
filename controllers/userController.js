@@ -1050,10 +1050,3 @@ export const getDependants = async (req, res) => {
     res.status(500).json({ message: "Error fetching dependants" });
   }
 };
-
-// =========================
-// Public Pages
-// =========================
-// Fetch Goods
-
-// Contact us
