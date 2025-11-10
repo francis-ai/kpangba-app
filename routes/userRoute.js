@@ -100,4 +100,6 @@ router.delete("/delete-dependent/:dependant_id", authMiddleware, removeDependant
 
 // Fetch All goods
 
+// Contact us
+
 export default router;
