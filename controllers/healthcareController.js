@@ -216,7 +216,7 @@ export const getCustomerByEmail = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    // Fetch customer by email
+    // 1️⃣ Check if the email exists in tbl_customer
     const [customers] = await db.query(
       "SELECT * FROM tbl_customer WHERE cust_email = ?",
       [email]
@@ -227,9 +227,9 @@ export const getCustomerByEmail = async (req, res) => {
     }
 
     const customer = customers[0];
-
-    // Check eligibility (number of orders this month)
     const currentMonth = new Date().toISOString().slice(0, 7);
+
+    // 2️⃣ Check the customer's orders for this month
     const [orderCountRows] = await db.query(
       "SELECT COUNT(*) AS count FROM tbl_orders WHERE customer_email = ? AND DATE_FORMAT(order_date, '%Y-%m') = ?",
       [customer.cust_email, currentMonth]
@@ -237,28 +237,78 @@ export const getCustomerByEmail = async (req, res) => {
 
     const orderCount = orderCountRows[0].count;
 
-    const eligibility =
-      orderCount >= 4
-        ? { status: "Eligible", orders: orderCount }
-        : { status: "Not Eligible", orders: orderCount };
+    // 3️⃣ If customer has >= 4 orders, eligible directly
+    if (orderCount >= 4) {
+      return res.status(200).json({
+        customer: {
+          id: customer.cust_id,
+          name: customer.cust_name,
+          email: customer.cust_email,
+          phone: customer.cust_phone,
+        },
+        eligibility: { status: "Eligible", orders: orderCount, type: "Direct" },
+      });
+    }
 
-    // Return customer + eligibility
-    res.status(200).json({
-      customer: {
-        id: customer.cust_id,
-        name: customer.cust_name,
-        email: customer.cust_email,
-        phone: customer.cust_phone,
-      },
-      eligibility,
-    });
+    // 4️⃣ If not eligible, check if this email is a dependant
+    const [dependantRows] = await db.query(
+      "SELECT * FROM tbl_dependants WHERE dependant_email = ?",
+      [email]
+    );
+
+    if (dependantRows.length === 0) {
+      // Not a dependant either
+      return res.status(200).json({
+        customer: {
+          id: customer.cust_id,
+          name: customer.cust_name,
+          email: customer.cust_email,
+          phone: customer.cust_phone,
+        },
+        eligibility: { status: "Not Eligible", orders: orderCount, type: "None" },
+      });
+    }
+
+    // 5️⃣ Find the main customer who added this dependant
+    const mainCustomer = dependantRows[0].customer_email;
+
+    // Check the main customer's eligibility
+    const [mainOrderCountRows] = await db.query(
+      "SELECT COUNT(*) AS count FROM tbl_orders WHERE customer_email = ? AND DATE_FORMAT(order_date, '%Y-%m') = ?",
+      [mainCustomer, currentMonth]
+    );
+
+    const mainOrderCount = mainOrderCountRows[0].count;
+
+    if (mainOrderCount >= 4) {
+      return res.status(200).json({
+        customer: {
+          id: customer.cust_id,
+          name: customer.cust_name,
+          email: customer.cust_email,
+          phone: customer.cust_phone,
+        },
+        eligibility: { status: "Eligible (via Dependancy)", orders: mainOrderCount, type: "Dependant" },
+      });
+    } else {
+      return res.status(200).json({
+        customer: {
+          id: customer.cust_id,
+          name: customer.cust_name,
+          email: customer.cust_email,
+          phone: customer.cust_phone,
+        },
+        eligibility: { status: "Not Eligible", orders: mainOrderCount, type: "Dependant" },
+      });
+    }
+
   } catch (error) {
     console.error("Error fetching customer by email:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
-
+// ✅ 2. Get all request detail
 export const getAllHealthcareRequests = async (req, res) => {
   try {
     const { service_name } = req.user; // from token (after login)
@@ -301,16 +351,37 @@ export const getHealthcareRequestById = async (req, res) => {
 export const completeHealthcareRequest = async (req, res) => {
   try {
     const { id } = req.params;
-    const { doctor_reply, doctor_name, hospital_name } = req.body;
+    const {
+      doctor_reply,
+      doctor_name,
+      hospital_name,
+      admission_status,
+      duration,
+      illness,
+      drugs_prescribed,
+    } = req.body;
 
     const [result] = await db.query(
       `UPDATE tbl_health_care_requests 
        SET status = 'Completed',
            doctor_reply = ?,
            doctor_name = ?,
-           hospital_name = ?
+           hospital_name = ?,
+           admission_status = ?,
+           duration = ?,
+           illness = ?,
+           drugs_prescribed = ?
        WHERE request_id = ?`,
-      [doctor_reply, doctor_name, hospital_name, id]
+      [
+        doctor_reply,
+        doctor_name,
+        hospital_name,
+        admission_status,
+        duration,
+        illness,
+        drugs_prescribed,
+        id,
+      ]
     );
 
     if (result.affectedRows === 0)
@@ -320,10 +391,62 @@ export const completeHealthcareRequest = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Request marked as completed with doctor details and reply.",
+      message: "Request marked as completed with full medical details.",
     });
   } catch (error) {
     console.error("Error completing request:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+export const createHealthcareRequest = async (req, res) => {
+  try {
+    const { health_care_service, select_service, service_description, sender_email, cust_id } = req.body;
+
+    if (!health_care_service || !select_service || !service_description || !sender_email || !cust_id) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // Optional: verify eligibility before inserting
+    const [customerOrders] = await db.query(
+      "SELECT COUNT(*) AS count FROM tbl_orders WHERE customer_email = ? AND DATE_FORMAT(order_date, '%Y-%m') = ?",
+      [sender_email, new Date().toISOString().slice(0, 7)]
+    );
+
+    let isEligible = customerOrders[0].count >= 4;
+
+    // Check dependant eligibility if not directly eligible
+    if (!isEligible) {
+      const [dependantLink] = await db.query(
+        "SELECT customer_email FROM tbl_dependants WHERE dependant_email = ?",
+        [sender_email]
+      );
+
+      if (dependantLink.length > 0) {
+        const [parentOrders] = await db.query(
+          "SELECT COUNT(*) AS count FROM tbl_orders WHERE customer_email = ? AND DATE_FORMAT(order_date, '%Y-%m') = ?",
+          [dependantLink[0].customer_email, new Date().toISOString().slice(0, 7)]
+        );
+        isEligible = parentOrders[0].count >= 4;
+      }
+    }
+
+    if (!isEligible) {
+      return res.status(403).json({ message: "Customer is not eligible for healthcare services this month." });
+    }
+
+    // Insert the healthcare request
+    await db.query(
+      `INSERT INTO tbl_health_care_requests 
+       (health_care_service, select_service, service_description, sender_email, cust_id, request_date, status) 
+       VALUES (?, ?, ?, ?, ?, NOW(), 'Pending')`,
+      [health_care_service, select_service, service_description, sender_email, cust_id]
+    );
+
+    res.status(201).json({ message: "Healthcare request created successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };

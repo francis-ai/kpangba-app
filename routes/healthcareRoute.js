@@ -10,6 +10,7 @@ import {
   getAllHealthcareRequests,
   getHealthcareRequestById,
   completeHealthcareRequest,
+  createHealthcareRequest
 } from "../controllers/healthcareController.js";
 import { verifyToken } from "../middlewares/healthcareMiddleware.js";
 
@@ -26,14 +27,15 @@ router.get("/profile", verifyToken, getHealthcareProfile);
 
 // Get customer via QR scan or email
 router.get("/customer/:idOrEmail", getCustomerByQRCodeOrEmail);
-router.post("/customer/by-email", getCustomerByEmail);
+router.post("/customer_by_email", getCustomerByEmail);
 
 router.get("/request", verifyToken, getAllHealthcareRequests);
 router.get("/request/:id", verifyToken, getHealthcareRequestById);
 router.put("/request/:id/complete", verifyToken, completeHealthcareRequest);
 
-export default router;
+router.post("/request", verifyToken, createHealthcareRequest);
 
+export default router;
 
 
 
