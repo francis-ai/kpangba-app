@@ -98,4 +98,6 @@ router.get("/get-dependent", authMiddleware, getDependants);
 router.post("/add-dependent", authMiddleware, addDependant);
 router.delete("/delete-dependent/:dependant_id", authMiddleware, removeDependant);
 
+// Fetch All goods
+
 export default router;
