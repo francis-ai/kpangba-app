@@ -29,7 +29,6 @@ router.get("/profile", verifyToken, getHealthcareProfile);
 router.get("/customer/:idOrEmail", getCustomerByQRCodeOrEmail);
 router.post("/customer_by_email", getCustomerByEmail);
 
-
 // Healthcare request
 router.get("/request", verifyToken, getAllHealthcareRequests);
 router.get("/request/:id", verifyToken, getHealthcareRequestById);
