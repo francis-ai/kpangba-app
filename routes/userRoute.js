@@ -47,6 +47,7 @@ router.put("/auth/reset-password", resetPassword);
 router.get("/dashboard", authMiddleware, dashboard);
 router.post("/request-card", authMiddleware, requestCard);
 
+
 // Manage Card
 router.get("/wallet/balance", authMiddleware, getWalletBalance);
 router.get("/card/profile", authMiddleware, getCardAndProfile);

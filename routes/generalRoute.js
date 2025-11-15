@@ -1,5 +1,5 @@
 import express from "express";
-import { getAllCountries } from "../controllers/generalController";
+import { getAllCountries } from "../controllers/generalController.js";
 
 const router = express.Router();
 

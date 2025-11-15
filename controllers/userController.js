@@ -621,18 +621,27 @@ export const getMyOrders = async (req, res) => {
 // ============================
 // Manage card endpoints
 // ============================
-// 1️⃣ Get Wallet Balance
 export const getWalletBalance = async (req, res) => {
-    try {
-        const email = req.user.email;
-        const result = await db.query("SELECT balance FROM tbl_wallets WHERE customer_email = ?", [email]);
-        const balance = result[0]?.balance || 0;
-        res.json({ success: true, balance });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Failed to get wallet balance" });
-    }
+  try {
+    const email = req.user.email;
+
+    const [rows] = await db.query(
+      "SELECT balance FROM tbl_wallets WHERE customer_email = ?",
+      [email]
+    );
+
+    const balance = rows.length > 0 ? rows[0].balance : 0;
+
+    return res.json({ success: true, balance });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get wallet balance",
+    });
+  }
 };
+
 
 // 2️⃣ Get Card Details + Customer Profile
 export const getCardAndProfile = async (req, res) => {
