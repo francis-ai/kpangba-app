@@ -397,6 +397,46 @@ export const dashboard = async (req, res) => {
   }
 };
 
+// =========== Get profile =================
+export const getProfile = async (req, res) => {
+  try {
+    const cust_id = req.user.id;    // from authMiddleware
+
+    if (!cust_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer ID missing",
+      });
+    }
+
+    // Fetch ALL columns for the user
+    const [rows] = await db.query(
+      "SELECT * FROM tbl_customer WHERE cust_id = ?",
+      [cust_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      profile: rows[0],
+    });
+
+  } catch (error) {
+    console.error("Get profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
+  }
+};
+
 // ============ Request card ==============
 export const requestCard = async (req, res) => {
   const cust_id = req.user.id;     // from authMiddleware
