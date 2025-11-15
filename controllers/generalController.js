@@ -88,3 +88,21 @@ export const getSliders = async (req, res) => {
       .json({ success: false, message: "Failed to fetch sliders" });
   }
 };
+
+// Get services
+export const getAllServices = async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM tbl_service");
+
+    return res.status(200).json({
+      success: true,
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching services:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch services",
+    });
+  }
+};
