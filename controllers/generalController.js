@@ -1,5 +1,6 @@
 import db from "../config/db.js"; 
 
+// Get countrieds
 export const getAllCountries = async (req, res) => {
   try {
     const sql = "SELECT country_id, country_name FROM tbl_country";
@@ -16,5 +17,56 @@ export const getAllCountries = async (req, res) => {
       success: false,
       message: "Server error fetching countries",
     });
+  }
+};
+
+// Get Products
+export const getFeaturedProducts = async (req, res) => {
+  try {
+    const limit = req.query.limit || 10; // from frontend
+
+    const [products] = await db.query(
+      "SELECT * FROM tbl_product WHERE p_is_featured = 1 AND p_is_active = 1 LIMIT ?",
+      [parseInt(limit)]
+    );
+
+    return res.json({ success: true, products });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Failed to fetch featured products" });
+  }
+};
+
+
+export const getLatestProducts = async (req, res) => {
+  try {
+    const limit = req.query.limit || 10;
+
+    const [products] = await db.query(
+      "SELECT * FROM tbl_product WHERE p_is_active = 1 ORDER BY p_id DESC LIMIT ?",
+      [parseInt(limit)]
+    );
+
+    return res.json({ success: true, products });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Failed to fetch latest products" });
+  }
+};
+
+
+export const getPopularProducts = async (req, res) => {
+  try {
+    const limit = req.query.limit || 10;
+
+    const [products] = await db.query(
+      "SELECT * FROM tbl_product WHERE p_is_active = 1 ORDER BY p_total_view DESC LIMIT ?",
+      [parseInt(limit)]
+    );
+
+    return res.json({ success: true, products });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: "Failed to fetch popular products" });
   }
 };
