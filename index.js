@@ -4,6 +4,7 @@ import cors from "cors";
 
 import userRoutes from "./routes/userRoute.js";
 import healthcareRoute from "./routes/healthcareRoute.js";
+import generalRoute from "./routes/generalRoute.js"
 
 dotenv.config();
 const app = express();
@@ -14,7 +15,7 @@ app.use(express.json());
 // Routes
 app.use("/api/user", userRoutes);
 app.use("/api/healthcare", healthcareRoute);
-
+app.use("/api/general", generalRoute)
 
 
 app.get("/", (req, res) => {
