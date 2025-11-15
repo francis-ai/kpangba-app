@@ -72,6 +72,39 @@ export const getPopularProducts = async (req, res) => {
 };
 
 
+export const getSingleProduct = async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    if (!productId) {
+      return res.status(400).json({ success: false, message: "Product ID is required" });
+    }
+
+    const [rows] = await db.query(
+      "SELECT * FROM tbl_product WHERE p_id = ? AND p_is_active = 1",
+      [productId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    return res.json({
+      success: true,
+      product: rows[0],
+    });
+
+  } catch (error) {
+    console.error("Get Single Product Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch product",
+      error: error.message,
+    });
+  }
+};
+
+
 // Get Slider
 export const getSliders = async (req, res) => {
   try {
