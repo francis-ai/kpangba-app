@@ -70,3 +70,21 @@ export const getPopularProducts = async (req, res) => {
     return res.status(500).json({ success: false, message: "Failed to fetch popular products" });
   }
 };
+
+
+// Get Slider
+export const getSliders = async (req, res) => {
+  try {
+    const [sliders] = await db.query("SELECT * FROM tbl_slider ORDER BY id ASC");
+
+    return res.json({
+      success: true,
+      sliders,
+    });
+  } catch (error) {
+    console.error("Slider Fetch Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to fetch sliders" });
+  }
+};

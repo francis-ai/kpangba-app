@@ -3,7 +3,8 @@ import {
     getAllCountries,
     getFeaturedProducts,
     getLatestProducts,
-    getPopularProducts
+    getPopularProducts,
+    getSliders,
 } from "../controllers/generalController.js";
 
 const router = express.Router();
@@ -15,5 +16,9 @@ router.get("/countries", getAllCountries);
 router.get("/products/featured", getFeaturedProducts);
 router.get("/products/latest", getLatestProducts);
 router.get("/products/popular", getPopularProducts);
+
+// Get Slider
+router.get("/sliders", getSliders);
+
 
 export default router;
