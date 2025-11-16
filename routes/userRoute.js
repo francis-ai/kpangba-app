@@ -27,7 +27,10 @@ import {
 
     addDependant,
     removeDependant,
-    getDependants
+    getDependants,
+
+    getBillingShipping,
+    updateBillingShipping, 
 } from "../controllers/userController.js";
 import multer from "multer";
 import fs from "fs";
@@ -98,6 +101,10 @@ router.get("/order-eligibility", authMiddleware, getOrderEligibility);
 router.get("/get-dependent", authMiddleware, getDependants);
 router.post("/add-dependent", authMiddleware, addDependant);
 router.delete("/delete-dependent/:dependant_id", authMiddleware, removeDependant);
+
+// Billing and shippping Address
+router.get("/customer/billing-shipping", authMiddleware, getBillingShipping);
+router.put("/customer/billing-shipping", authMiddleware, updateBillingShipping);
 
 
 export default router;

@@ -337,7 +337,7 @@ export const resetPassword = async (req, res) => {
 // =========== Dashboard =================
 export const dashboard = async (req, res) => {
   try {
-    const cust_id = req.user.id;    // from authMiddleware
+    const cust_id = req.user.id;   
     const cust_email = req.user.email;
 
     // 1️⃣ Fetch health care service for the customer
@@ -1097,5 +1097,117 @@ export const getDependants = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching dependants" });
+  }
+};
+
+
+// ===================================
+// Billing and shipping address
+// ===================================
+export const getBillingShipping = async (req, res) => {
+  try {
+    const cust_id = req.user.id;
+
+    const [rows] = await db.query(
+      `SELECT 
+        cust_b_name, cust_b_cname, cust_b_phone, cust_b_country, cust_b_address,
+        cust_b_city, cust_b_state, cust_b_zip,
+        cust_s_name, cust_s_cname, cust_s_phone, cust_s_country, cust_s_address,
+        cust_s_city, cust_s_state, cust_s_zip
+      FROM tbl_customer
+      WHERE cust_id = ?`,
+      [cust_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Customer not found"
+      });
+    }
+
+    return res.json({ success: true, data: rows[0] });
+
+  } catch (error) {
+    console.error("Fetch billing/shipping error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+
+// Update
+export const updateBillingShipping = async (req, res) => {
+  try {
+    const cust_id = req.user.id;
+
+    const {
+      cust_b_name,
+      cust_b_cname,
+      cust_b_phone,
+      cust_b_country,
+      cust_b_address,
+      cust_b_city,
+      cust_b_state,
+      cust_b_zip,
+
+      cust_s_name,
+      cust_s_cname,
+      cust_s_phone,
+      cust_s_country,
+      cust_s_address,
+      cust_s_city,
+      cust_s_state,
+      cust_s_zip
+    } = req.body;
+
+    // Validate required fields (just like PHP)
+    if (
+      !cust_b_name || !cust_b_phone || !cust_b_country ||
+      !cust_b_address || !cust_b_city || !cust_b_state || !cust_b_zip ||
+      !cust_s_name || !cust_s_phone || !cust_s_country ||
+      !cust_s_address || !cust_s_city || !cust_s_state || !cust_s_zip
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "All required billing & shipping fields must be filled"
+      });
+    }
+
+    await db.query(
+      `UPDATE tbl_customer SET
+        cust_b_name=?, cust_b_cname=?, cust_b_phone=?, cust_b_country=?,
+        cust_b_address=?, cust_b_city=?, cust_b_state=?, cust_b_zip=?,
+
+        cust_s_name=?, cust_s_cname=?, cust_s_phone=?, cust_s_country=?,
+        cust_s_address=?, cust_s_city=?, cust_s_state=?, cust_s_zip=?
+
+      WHERE cust_id=?`,
+      [
+        cust_b_name, cust_b_cname, cust_b_phone, cust_b_country,
+        cust_b_address, cust_b_city, cust_b_state, cust_b_zip,
+
+        cust_s_name, cust_s_cname, cust_s_phone, cust_s_country,
+        cust_s_address, cust_s_city, cust_s_state, cust_s_zip,
+
+        cust_id
+      ]
+    );
+
+    return res.json({
+      success: true,
+      message: "Billing & shipping updated successfully"
+    });
+
+  } catch (error) {
+    console.error("Update billing/shipping error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
   }
 };
