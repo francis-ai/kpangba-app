@@ -26,7 +26,5 @@ router.get("/sliders", getSliders);
 // Get Services
 router.get("/services", getAllServices);
 
-// Update Billing and shipping address
-
 
 export default router;
