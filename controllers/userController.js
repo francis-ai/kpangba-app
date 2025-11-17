@@ -1138,7 +1138,6 @@ export const getBillingShipping = async (req, res) => {
   }
 };
 
-
 // Update
 export const updateBillingShipping = async (req, res) => {
   try {
