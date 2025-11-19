@@ -1104,6 +1104,7 @@ export const getDependants = async (req, res) => {
 // ===================================
 // Billing and shipping address
 // ===================================
+// Get billing
 export const getBillingShipping = async (req, res) => {
   try {
     const cust_id = req.user.id;
@@ -1138,7 +1139,7 @@ export const getBillingShipping = async (req, res) => {
   }
 };
 
-// Update
+// Update biling
 export const updateBillingShipping = async (req, res) => {
   try {
     const cust_id = req.user.id;
