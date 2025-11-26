@@ -1079,7 +1079,6 @@ export const removeDependant = async (req, res) => {
   }
 };
 
-
 // Get all dependent
 export const getDependants = async (req, res) => {
   try {
@@ -1099,7 +1098,6 @@ export const getDependants = async (req, res) => {
     res.status(500).json({ message: "Error fetching dependants" });
   }
 };
-
 
 // ===================================
 // Billing and shipping address
