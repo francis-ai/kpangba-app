@@ -31,6 +31,8 @@ import {
 
     getBillingShipping,
     updateBillingShipping, 
+
+    contactFormController
 } from "../controllers/userController.js";
 import multer from "multer";
 import fs from "fs";
@@ -106,6 +108,7 @@ router.delete("/delete-dependent/:dependant_id", authMiddleware, removeDependant
 router.get("/customer/billing-shipping", authMiddleware, getBillingShipping);
 router.put("/customer/billing-shipping", authMiddleware, updateBillingShipping);
 
-
+// Contact Form
+router.post("/contact", contactFormController);
 
 export default router;
