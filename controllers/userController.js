@@ -27,6 +27,7 @@ export const registerCustomer = async (req, res) => {
     cust_zip,
     cust_country,
     cust_password,
+    health_care_service, // ✅ NEW
   } = req.body;
 
   try {
@@ -40,7 +41,8 @@ export const registerCustomer = async (req, res) => {
       !cust_state ||
       !cust_zip ||
       !cust_country ||
-      !cust_password
+      !cust_password ||
+      !health_care_service // ✅ validate
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -66,8 +68,9 @@ export const registerCustomer = async (req, res) => {
       `INSERT INTO tbl_customer (
         cust_name, cust_email, cust_phone, cust_address,
         cust_city, cust_state, cust_zip, cust_country,
-        cust_password, cust_token, cust_datetime, cust_timestamp, cust_status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        cust_password, cust_token, cust_datetime, cust_timestamp,
+        cust_status, health_care_service
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         cust_name,
         cust_email,
@@ -82,6 +85,7 @@ export const registerCustomer = async (req, res) => {
         now,
         now,
         0,
+        health_care_service, // ✅ service_id stored
       ]
     );
 
@@ -105,7 +109,8 @@ export const registerCustomer = async (req, res) => {
     // 7️⃣ Respond success
     res.status(201).json({
       success: true,
-      message: "Customer registered successfully. Please check your email to verify your account.",
+      message:
+        "Customer registered successfully. Please check your email to verify your account.",
     });
   } catch (error) {
     console.error("Register customer error:", error);

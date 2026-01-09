@@ -139,3 +139,22 @@ export const getAllServices = async (req, res) => {
     });
   }
 };
+
+export const getHealthcareServices = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT service_id, service_name FROM tbl_health_care"
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: rows,
+    });
+  } catch (error) {
+    console.error("Error fetching services:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch services",
+    });
+  }
+};

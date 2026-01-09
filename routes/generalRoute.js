@@ -7,6 +7,7 @@ import {
     getSliders,
     getAllServices,
     getSingleProduct,
+    getHealthcareServices
 } from "../controllers/generalController.js";
 
 const router = express.Router();
@@ -25,6 +26,9 @@ router.get("/sliders", getSliders);
 
 // Get Services
 router.get("/services", getAllServices);
+
+// Get All Healthcare
+router.get('/healthcare', getHealthcareServices);
 
 
 export default router;
