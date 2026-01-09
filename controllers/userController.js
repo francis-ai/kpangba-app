@@ -1021,45 +1021,66 @@ export const addDependant = async (req, res) => {
   try {
     const { dependant_email } = req.body;
     const userId = req.user.id;
-    const userEmail = req.user.email;
-    const userName = req.user.name;
 
-    if (!dependant_email)
+    if (!dependant_email) {
       return res.status(400).json({ message: "Dependant email is required" });
+    }
 
-    if (dependant_email === userEmail)
-      return res.status(400).json({ message: "You can't add yourself as a dependant" });
+    // 🔹 Get logged-in user info from DB
+    const [userRows] = await db.query(
+      "SELECT cust_name, cust_email FROM tbl_customer WHERE cust_id = ?",
+      [userId]
+    );
 
-    // Check if dependant exists
+    if (!userRows.length) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userName = userRows[0].cust_name;
+    const userEmail = userRows[0].cust_email;
+
+    // 🔹 Get dependant
     const [dependantRows] = await db.query(
       "SELECT cust_id, cust_name, cust_email FROM tbl_customer WHERE cust_email = ?",
       [dependant_email]
     );
+
+    if (!dependantRows.length) {
+      return res.status(404).json({ message: "No customer found with that email" });
+    }
+
     const dependant = dependantRows[0];
 
-    if (!dependant)
-      return res.status(404).json({ message: "No customer found with that email" });
-
-    // Check if already added
+    // 🔹 Check duplicate
     const [existing] = await db.query(
-      "SELECT * FROM tbl_dependants WHERE customer_id = ? AND dependant_id = ?",
+      "SELECT id FROM tbl_dependants WHERE customer_id = ? AND dependant_id = ?",
       [userId, dependant.cust_id]
     );
 
-    if (existing.length > 0)
+    if (existing.length) {
       return res.status(400).json({ message: "This person is already your dependant" });
+    }
 
-    // Add dependant
+    // ✅ Insert safely
     await db.query(
-      `INSERT INTO tbl_dependants (customer_id, customer_email, customer_name, dependant_id, dependant_email, dependant_name)
+      `INSERT INTO tbl_dependants
+       (customer_id, customer_email, customer_name, dependant_id, dependant_email, dependant_name)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [userId, userEmail, userName, dependant.cust_id, dependant.cust_email, dependant.cust_name]
+      [
+        userId,
+        userEmail,
+        userName,
+        dependant.cust_id,
+        dependant.cust_email,
+        dependant.cust_name
+      ]
     );
 
-    res.json({ message: "Dependant added successfully!" });
+    res.json({ message: "Dependant added successfully" });
+
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Database error", error: error.message });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -1240,3 +1261,119 @@ export const contactFormController = async (req, res) => {
     });
   }
 };
+
+// ===================================
+// Payment with wallet
+// ===================================
+export const payWithWallet = async (req, res) => {
+  try {
+    const { amount, product_name } = req.body;
+    const cust_id = req.user.id;
+    const cust_email = req.user.email;
+
+    if (!amount || !product_name) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount and product name are required"
+      });
+    }
+
+    const amountToPay = parseFloat(amount);
+
+    if (isNaN(amountToPay) || amountToPay <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment amount"
+      });
+    }
+
+    // 🔹 Get wallet balance
+    const [walletRows] = await db.query(
+      "SELECT balance FROM tbl_wallets WHERE customer_email = ?",
+      [cust_email]
+    );
+
+    if (!walletRows.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Wallet not found"
+      });
+    }
+
+    const currentBalance = parseFloat(walletRows[0].balance);
+
+    // 🔹 Check balance
+    if (currentBalance < amountToPay) {
+      return res.status(400).json({
+        success: false,
+        message: "Insufficient wallet balance"
+      });
+    }
+
+    // 🔹 Deduct balance
+    const newBalance = currentBalance - amountToPay;
+
+    await db.query(
+      "UPDATE tbl_wallets SET balance = ? WHERE customer_email = ?",
+      [newBalance, cust_email]
+    );
+
+    // 🔹 Generate transaction reference
+    function generateTransactionReference(length = 13) {
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += Math.floor(Math.random() * 10); // 0-9 only
+      }
+      return 'txn_' + result;
+    }
+
+    // Example usage
+    const transaction_reference = generateTransactionReference(12);
+    console.log(transaction_reference);
+
+
+
+    // 🔹 Insert wallet transaction
+    await db.query(
+      `INSERT INTO tbl_wallet_transaction
+       (customer_email, type, amount, description, transaction_reference, created_at)
+       VALUES (?, 'debit', ?, ?, ?, NOW())`,
+      [
+        cust_email,
+        amountToPay,
+        `Payment for ${product_name}`,
+        transaction_reference
+      ]
+    );
+
+    // 🔹 Insert order
+    await db.query(
+      `INSERT INTO tbl_orders
+       (customer_email, product_name, order_date, payment_method, amount, status, transaction_reference, created_at, updated_at)
+       VALUES (?, ?, NOW(), 'wallet', ?, 'completed', ?, NOW(), NOW())`,
+      [
+        cust_email,
+        product_name,
+        amountToPay,
+        transaction_reference
+      ]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Payment successful",
+      transaction_reference,
+      new_balance: newBalance
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Wallet payment failed",
+      error: error.message
+    });
+  }
+};
+

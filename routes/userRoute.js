@@ -32,7 +32,8 @@ import {
     getBillingShipping,
     updateBillingShipping, 
 
-    contactFormController
+    contactFormController,
+    payWithWallet
 } from "../controllers/userController.js";
 import multer from "multer";
 import fs from "fs";
@@ -110,5 +111,7 @@ router.put("/customer/billing-shipping", authMiddleware, updateBillingShipping);
 
 // Contact Form
 router.post("/contact", contactFormController);
+
+router.post("/wallet/pay", authMiddleware, payWithWallet);
 
 export default router;
