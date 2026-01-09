@@ -687,7 +687,6 @@ export const getWalletBalance = async (req, res) => {
   }
 };
 
-
 // 2️⃣ Get Card Details + Customer Profile
 export const getCardAndProfile = async (req, res) => {
     try {
@@ -1263,7 +1262,7 @@ export const contactFormController = async (req, res) => {
 };
 
 // ===================================
-// Payment with wallet
+// Payment with Wallet
 // ===================================
 export const payWithWallet = async (req, res) => {
   try {
