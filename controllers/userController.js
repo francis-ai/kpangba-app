@@ -94,10 +94,10 @@ export const registerCustomer = async (req, res) => {
       cust_email
     )}&token=${cust_token}`;
 
-    const subject = "Verify Your Email - KpangbaApp";
+    const subject = "Verify Your Email - Kpangba";
     const html = `
       <h2>Welcome, ${cust_name}!</h2>
-      <p>Thank you for registering with KpangbaApp.</p>
+      <p>Thank you for registering with Kpangba.</p>
       <p>Please click the link below to verify your email:</p>
       <a href="${verifyLink}" style="background:#167ac6;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Verify Email</a>
       <p>If the button doesn't work, copy and paste this link into your browser:</p>
